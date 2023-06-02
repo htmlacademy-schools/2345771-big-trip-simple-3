@@ -165,6 +165,7 @@ export class FormEditingView {
   #element = null;
 
   get template() {
+
     return createNewFormEditingTemplate();
   }
 
