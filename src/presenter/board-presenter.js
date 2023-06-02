@@ -1,31 +1,82 @@
 import {ListView} from '../view/list-view';
-import {FormCreatingView} from '../view/form-creating-view';
+import {FormEditingView} from '../view/form-editing-view';
 import {RoutePointView} from '../view/route-point-view';
 import {SortingView} from '../view/sorting-view';
 import {render} from '../render.js';
 
 export class BoardPresenter {
-  ListComponent = new ListView();
+  #boardContainer = null;
+  #routePointsModel = null;
+  #destinationModel = null;
+
+  #ListComponent = new ListView();
+
+  #boardPoits = [];
+  #boardEditingForms = [];
 
   constructor({boardContainer, routePointsModel, destinationModel}) {
-    this.boardContainer = boardContainer;
-    this.routePointsModel = routePointsModel;
-    this.destinationModel = destinationModel;
+    this.#boardContainer = boardContainer;
+    this.#routePointsModel = routePointsModel;
+    this.#destinationModel = destinationModel;
   }
 
   init() {
-    this.boardPoits = [...this.routePointsModel.getRoutePoints()];
-    this.boardEditingForms = [...this.destinationModel.getDestinations()];
+    this.#boardPoits = [...this.#routePointsModel.routePoints];
+    this.#boardEditingForms = [...this.#destinationModel.destinations];
 
-    render(new SortingView(), this.boardContainer);
-    render(this.ListComponent, this.boardContainer);
+    render(new SortingView(), this.#boardContainer);
+    render(this.#ListComponent, this.#boardContainer);
 
-    for (let i = 0; i < this.boardEditingForms.length; i++) {
-      render(new FormCreatingView({Destination: this.boardEditingForms[i]}), this.ListComponent.getElement());
+    for (let i = 0; i < this.#boardPoits.length; i++) {
+      this.#renderPoint(this.#boardPoits[i]);
     }
+  }
 
-    for (let i = 0; i < this.boardPoits.length; i++) {
-      render(new RoutePointView({RoutePoint: this.boardPoits[i]}), this.ListComponent.getElement());
-    }
+  #renderPoint(point, destination) {
+    const pointComponent = new RoutePointView({point});
+    const formComponent = new FormEditingView({destination});
+
+    const replacePointToForm = () => {
+      this.#ListComponent.element.replaceChild(formComponent.element, pointComponent.element);
+    };
+
+    const replaceFormToPoint = () => {
+      this.#ListComponent.element.replaceChild(pointComponent.element, formComponent.element);
+    };
+
+    const deletePoint = () => {
+      this.#ListComponent.element.removeChild(formComponent.element);
+    };
+
+    const escKeyDownHandler = (evt) => {
+      if (evt.key === 'Escape' || evt.key === 'Esc') {
+        evt.preventDefault();
+        replaceFormToPoint();
+        document.removeEventListener('keydown', escKeyDownHandler);
+      }
+    };
+
+    pointComponent.element.querySelector('.event__rollup-btn').addEventListener('click', () => {
+      replacePointToForm();
+      document.addEventListener('keydown', escKeyDownHandler);
+    });
+
+    formComponent.element.querySelector('.event__reset-btn').addEventListener('click', () => {
+      deletePoint();
+      document.addEventListener('keydown', escKeyDownHandler);
+    });
+
+    formComponent.element.querySelector('.event__rollup-btn').addEventListener('click', () => {
+      replaceFormToPoint();
+      document.addEventListener('keydown', escKeyDownHandler);
+    });
+
+    formComponent.element.querySelector('form').addEventListener('submit', (evt) => {
+      evt.preventDefault();
+      replaceFormToPoint();
+      document.removeEventListener('keydown', escKeyDownHandler);
+    });
+
+    render(pointComponent, this.#ListComponent.element);
   }
 }
