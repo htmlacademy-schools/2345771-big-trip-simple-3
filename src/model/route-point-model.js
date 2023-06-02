@@ -1,11 +1,11 @@
 import {getRoutePoint} from '../mock/route-point-mock';
 
-const ROUTE_POINTS_COUNT = 3;
+const ROUTE_POINTS_COUNT = 5;
 
 export class RoutePointsModel {
-  tasks = Array.from({length: ROUTE_POINTS_COUNT}, getRoutePoint);
+  #points = Array.from({length: ROUTE_POINTS_COUNT}, getRoutePoint);
 
-  getRoutePoints() {
-    return this.tasks;
+  get routePoints() {
+    return this.#points;
   }
 }
