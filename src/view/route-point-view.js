@@ -1,5 +1,4 @@
-import {createElement} from '../render.js';
-import {getRoutePoint} from '../mock/route-point-mock.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
 
 
@@ -20,8 +19,8 @@ const convertToDateTime = (date) => date.substring(0, date.indexOf('.'));
 const convertToTime = (date) => dayjs(date).format(TIME_FORMAT);
 const convertToUpperCase = (type) => type.charAt(0).toUpperCase() + type.slice(1);
 
-const createNewRoutePointTemplate = () => {
-  const {basePrice, dateFrom, dateTo, destination, offers, type} = getRoutePoint();
+const createNewRoutePointTemplate = (routePoint) => {
+  const {basePrice, dateFrom, dateTo, destination, offers, type} = routePoint;
   const eventDateTime = convertToEventDateTime(dateFrom);
   const eventDate = convertToEventDate(dateFrom);
   const startDateTime = convertToDateTime(dateFrom);
@@ -58,22 +57,25 @@ const createNewRoutePointTemplate = () => {
 </li>`;
 };
 
-export class RoutePointView {
-  #element = null;
+export default class RoutePointView extends AbstractView {
+  #routePoint = null;
+  #handleEditClick = null;
+
+  constructor({routePoint, onEditClick}) {
+    super();
+    this.#routePoint = routePoint;
+    this.#handleEditClick = onEditClick;
+
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#editClickHandler);
+  }
 
   get template() {
-    return createNewRoutePointTemplate();
+    return createNewRoutePointTemplate(this.#routePoint);
   }
 
-  get element() {
-    if (!this.#element) {
-      this.#element = createElement(this.template);
-    }
-
-    return this.#element;
-  }
-
-  removeElement() {
-    this.#element = null;
-  }
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }

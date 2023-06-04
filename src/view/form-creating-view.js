@@ -1,5 +1,5 @@
-import {createElement} from '../render.js';
-import {getDestination} from '../mock/destination-mock.js';
+import AbstractView from '../framework/view/abstract-view.js';
+import {getDestination} from '../mock/destination-mock';
 
 //const getPictures = (pictures) => pictures.map((picture) => `
 //'<img class="event__photo" src="${picture.src}" alt="${picture.description}">';
@@ -174,22 +174,33 @@ const createNewFormCreatingTemplate = () =>{
   </form>
   </li>`;
 };
-export class FormCreatingView {
-  #element = null;
+export default class FormCreatingView extends AbstractView {
+  #handleSubmit = null;
+  #handleDeleteClick = null;
+
+  constructor({onSubmit, onDeleteClick}){
+    super();
+    this.#handleSubmit = onSubmit;
+    this.#handleDeleteClick = onDeleteClick;
+
+    this.element.querySelector('form')
+      .addEventListener('click', this.#submitHandler); //заменить на submit
+    this.element.querySelector('.event__reset-btn')
+      .addEventListener('click', this.#deleteClickHandler);
+  }
 
   get template() {
     return createNewFormCreatingTemplate();
   }
 
-  get element() {
-    if (!this.#element) {
-      this.#element = createElement(this.template);
-    }
+  #submitHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleSubmit();
+  };
 
-    return this.#element;
-  }
+  #deleteClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleDeleteClick();
+  };
 
-  removeElement() {
-    this.#element = null;
-  }
 }
