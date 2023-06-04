@@ -1,11 +1,13 @@
-import {ListView} from '../view/list-view';
-import {EmptyView} from '../view/empty-view';
-import {FormEditingView} from '../view/form-editing-view';
-import {RoutePointView} from '../view/route-point-view';
-import {SortingView} from '../view/sorting-view';
-import {render} from '../render.js';
+import ListView from '../view/list-view';
+import EmptyView from '../view/empty-view';
+import FormEditingView from '../view/form-editing-view';
+import FormCreatingView from '../view/form-creating-view';
+import RoutePointView from '../view/route-point-view';
+import SortingView from '../view/sorting-view';
+import AddNewButtonView from '../view/add-new-button-view';
+import {render, RenderPosition} from '../framework/render.js';
 
-export class BoardPresenter {
+export default class BoardPresenter {
   #numberOfPoints = 0;
   #boardContainer = null;
   #routePointsModel = null;
@@ -27,28 +29,54 @@ export class BoardPresenter {
     this.#boardEditingForms = [...this.#destinationModel.destinations];
     this.#numberOfPoints = this.#boardPoits.length;
 
-    render(new SortingView(), this.#boardContainer);
-    render(this.#ListComponent, this.#boardContainer);
-
-    for (let i = 0; i < this.#boardPoits.length; i++) {
-      this.#renderPoint(this.#boardPoits[i]);
-    }
+    this.#renderBoard();
   }
 
-  #renderPoint(point, destination) {
-    const pointComponent = new RoutePointView({point});
-    const formComponent = new FormEditingView({destination});
+  #renderPoint(routePoint, formEditing) {
 
-    const replacePointToForm = () => {
-      this.#ListComponent.element.replaceChild(formComponent.element, pointComponent.element);
+    const escKeyDownHandler = (evt) => {
+      if (evt.key === 'Escape' || evt.key === 'Esc') {
+        evt.preventDefault();
+        replaceFormToPoint.call(this);
+        document.removeEventListener('keydown', escKeyDownHandler);
+      }
     };
 
-    const replaceFormToPoint = () => {
-      this.#ListComponent.element.replaceChild(pointComponent.element, formComponent.element);
-    };
+    const pointComponent = new RoutePointView({
+      routePoint,
+      onEditClick: () => {
+        replacePointToForm.call(this);
+        document.addEventListener('keydown', escKeyDownHandler);
+      }
+    });
 
-    const deletePoint = () => {
-      this.#ListComponent.element.removeChild(formComponent.element);
+    const formComponent = new FormEditingView({
+      formEditing,
+      onSubmit: () => {
+        replaceFormToPoint.call(this);
+        document.removeEventListener('keydown', escKeyDownHandler);
+      },
+      onDeleteClick: () => {
+        deletePoint.call(this);
+        document.addEventListener('keydown', escKeyDownHandler);
+      },
+      onRollUpClick: () => {
+        replaceFormToPoint.call(this);
+        document.addEventListener('keydown', escKeyDownHandler);
+      }
+    });
+
+    function replacePointToForm() {
+      pointComponent.element.replaceWith(formComponent.element);
+    }
+
+    function replaceFormToPoint() {
+      formComponent.element.replaceWith(pointComponent.element);
+    }
+
+    function deletePoint() {
+      formComponent.element.remove();
+      pointComponent.element.remove();
       formComponent.removeElement();
       pointComponent.removeElement();
       this.#numberOfPoints--;
@@ -58,37 +86,78 @@ export class BoardPresenter {
         }
         render(new EmptyView(),this.#boardContainer);
       }
-    };
+    }
 
-    const escKeyDownHandler = (evt) => {
-      if (evt.key === 'Escape' || evt.key === 'Esc') {
-        evt.preventDefault();
-        replaceFormToPoint();
-        document.removeEventListener('keydown', escKeyDownHandler);
-      }
-    };
-
-    pointComponent.element.querySelector('.event__rollup-btn').addEventListener('click', () => {
-      replacePointToForm();
-      document.addEventListener('keydown', escKeyDownHandler);
-    });
-
-    formComponent.element.querySelector('.event__reset-btn').addEventListener('click', () => {
-      deletePoint();
-      document.addEventListener('keydown', escKeyDownHandler);
-    });
-
-    formComponent.element.querySelector('.event__rollup-btn').addEventListener('click', () => {
-      replaceFormToPoint();
-      document.addEventListener('keydown', escKeyDownHandler);
-    });
-
-    formComponent.element.querySelector('form').addEventListener('submit', (evt) => {
-      evt.preventDefault();
-      replaceFormToPoint();
-      document.removeEventListener('keydown', escKeyDownHandler);
-    });
-
-    render(pointComponent, this.#ListComponent.element);
+    render(pointComponent, this.#ListComponent.element, RenderPosition.AFTERBEGIN);
   }
+
+  #renderBoard() {
+    render(new SortingView(), this.#boardContainer);
+    render(this.#ListComponent, this.#boardContainer);
+
+    for (let i = 0; i < this.#boardPoits.length; i++) {
+      this.#renderPoint(this.#boardPoits[i], this.#boardEditingForms[i]);
+    }
+
+    new AddNewButtonView({
+      onClick: () => {
+        if (this.#numberOfPoints === 0){
+          addNewPointRemoveEmptyBanner.call(this);
+        } else {
+          addNewPoint.call(this);
+        }
+      }
+    });
+
+    function addNewPointRemoveEmptyBanner() {
+      while (this.#boardContainer.firstChild) {
+        this.#boardContainer.removeChild(this.#boardContainer.firstChild);
+      }
+      render(new SortingView(), this.#boardContainer);
+      render(this.#ListComponent, this.#boardContainer);
+      addNewPoint.call(this);
+    }
+
+    function addNewPoint() {
+      const escKeyDownHandlerEdit = (evt) => {
+        if (evt.key === 'Escape' || evt.key === 'Esc') {
+          evt.preventDefault();
+          deleteForm.call(this);
+          document.removeEventListener('keydown', escKeyDownHandlerEdit);
+        }
+      };
+
+      document.addEventListener('keydown', escKeyDownHandlerEdit);
+
+      const formCreating = new FormCreatingView({
+        onSubmit: () => {
+          deleteForm.call(this);
+          this.#renderPoint(this.#boardPoits[0], this.#boardEditingForms[0]);
+          document.removeEventListener('keydown', escKeyDownHandlerEdit);
+        },
+        onDeleteClick: () => {
+          this.#numberOfPoints--;
+          deleteForm.call(this);
+          document.removeEventListener('keydown', escKeyDownHandlerEdit);
+        }
+      });
+
+      render(formCreating, this.#ListComponent.element, RenderPosition.AFTERBEGIN);
+      this.#numberOfPoints++;
+
+      function deleteForm() {
+        this.#ListComponent.element.removeChild(formCreating.element);
+        formCreating.removeElement();
+        if (this.#numberOfPoints <= 0) {
+          while (this.#boardContainer.firstChild) {
+            this.#boardContainer.removeChild(this.#boardContainer.firstChild);
+          }
+          render(new EmptyView(),this.#boardContainer);
+        }
+      }
+
+    }
+
+  }
+
 }
