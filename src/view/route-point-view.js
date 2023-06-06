@@ -1,7 +1,6 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
 
-
 const EVENT_DATE_FORMAT = 'MMM D';
 const TIME_FORMAT = 'H:mm';
 
@@ -72,6 +71,10 @@ export default class RoutePointView extends AbstractView {
 
   get template() {
     return createNewRoutePointTemplate(this.#routePoint);
+  }
+
+  get routePoint() {
+    return this.#routePoint;
   }
 
   #editClickHandler = (evt) => {
