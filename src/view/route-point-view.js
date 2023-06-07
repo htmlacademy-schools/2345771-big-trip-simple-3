@@ -4,13 +4,20 @@ import dayjs from 'dayjs';
 const EVENT_DATE_FORMAT = 'MMM D';
 const TIME_FORMAT = 'H:mm';
 
-const getOffers = (offers) => offers.map((offer) => `
-    <li class="event__offer">
+const getOffers = (offers, offersId) => {
+  const newOffers = [];
+  for (const offer of offers){
+    if (offer.id in offersId) {
+      newOffers.push(`<li class="event__offer">
       <span class="event__offer-title">${offer.title}</span>
       &plus;&euro;&nbsp;
       <span class="event__offer-price">${offer.price}</span>
     </li>
-  `).join('');
+  `);
+    }
+  }
+  return newOffers.join('');
+};
 
 const convertToEventDateTime = (date) => date.substring(0, date.indexOf('T'));
 const convertToEventDate = (date) => dayjs(date).format(EVENT_DATE_FORMAT);
@@ -18,7 +25,8 @@ const convertToDateTime = (date) => date.substring(0, date.indexOf('.'));
 const convertToTime = (date) => dayjs(date).format(TIME_FORMAT);
 const convertToUpperCase = (type) => type.charAt(0).toUpperCase() + type.slice(1);
 
-const createNewRoutePointTemplate = (routePoint) => {
+const createNewRoutePointTemplate = (routePoint, destinations, offersArray) => {
+
   const {basePrice, dateFrom, dateTo, destination, offers, type} = routePoint;
   const eventDateTime = convertToEventDateTime(dateFrom);
   const eventDate = convertToEventDate(dateFrom);
@@ -26,7 +34,8 @@ const createNewRoutePointTemplate = (routePoint) => {
   const startTime = convertToTime(dateFrom);
   const endDate = convertToDateTime(dateTo);
   const endTime = convertToTime(dateTo);
-  const offersOfPoint = getOffers(offers);
+  const allOffers = offersArray.filter(((el) => el.type === type))[0].offers;
+  const offersOfPoint = getOffers(allOffers, offers);
 
   return `<li class="trip-events__item">
   <div class="event">
@@ -34,7 +43,7 @@ const createNewRoutePointTemplate = (routePoint) => {
   <div class="event__type">
     <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
   </div>
-  <h3 class="event__title">${convertToUpperCase(type)} ${destination}</h3>
+  <h3 class="event__title">${convertToUpperCase(type)} ${destinations[destination - 1].name}</h3>
   <div class="event__schedule">
     <p class="event__time">
       <time class="event__start-time" datetime="${startDate}">${startTime}</time>
@@ -58,11 +67,15 @@ const createNewRoutePointTemplate = (routePoint) => {
 
 export default class RoutePointView extends AbstractView {
   #routePoint = null;
+  #destinations = null;
+  #offersArray = null;
   #handleEditClick = null;
 
-  constructor({routePoint, onEditClick}) {
+  constructor({routePoint, destinations, offersArray, onEditClick}) {
     super();
     this.#routePoint = routePoint;
+    this.#destinations = destinations;
+    this.#offersArray = offersArray;
     this.#handleEditClick = onEditClick;
 
     this.element.querySelector('.event__rollup-btn')
@@ -70,7 +83,7 @@ export default class RoutePointView extends AbstractView {
   }
 
   get template() {
-    return createNewRoutePointTemplate(this.#routePoint);
+    return createNewRoutePointTemplate(this.#routePoint, this.#destinations, this.#offersArray);
   }
 
   get routePoint() {
