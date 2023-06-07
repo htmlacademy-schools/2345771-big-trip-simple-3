@@ -8,7 +8,6 @@ import FilterView from '../view/filter-view';
 import AddNewButtonView from '../view/add-new-button-view';
 import {render, RenderPosition} from '../framework/render.js';
 
-import {getDestination} from '../mock/destination-mock';
 import {getRoutePoint,
   comparePointsByPriceHihgLow, comparePointsByDateLowHigh } from '../mock/route-point-mock';
 
@@ -20,7 +19,8 @@ export default class BoardPresenter {
   #ListComponent = new ListView();
 
   #boardPoints = [];
-  #boardEditingForms = [];
+  #boardDestinations = [];
+  #wasEmptyView = false;
 
   #filterContainer = document.querySelector('.trip-controls__filters');
   #currentDate = new Date().toJSON();
@@ -35,13 +35,34 @@ export default class BoardPresenter {
 
   init() {
     this.#boardPoints = [...this.#routePointsModel.routePoints];
-    this.#boardEditingForms = [...this.#destinationModel.destinations];
+    this.#boardDestinations = [...this.#destinationModel.destinations];
 
     this.#renderBoard();
   }
 
-  #renderPoint(routePoint, formEditing) {
+  #isEmpty() {
+    return ((this.#boardPoints.length <= 0 && !this.#isFuture) ||
+    (this.#boardFuturePoints.length <= 0 && this.#isFuture));
+  }
 
+  #renderEmptyView() {
+    if (this.#boardPoints.length <= 0 && !this.#isFuture) {
+      while (this.#boardContainer.firstChild) {
+        this.#boardContainer.removeChild(this.#boardContainer.firstChild);
+      }
+      render(new EmptyView('Click New Event to create your first point'),this.#boardContainer);
+      this.#wasEmptyView = true;
+    }
+    if (this.#boardFuturePoints.length <= 0 && this.#isFuture) {
+      while (this.#boardContainer.firstChild) {
+        this.#boardContainer.removeChild(this.#boardContainer.firstChild);
+      }
+      render(new EmptyView('There are no future events now'),this.#boardContainer);
+      this.#wasEmptyView = true;
+    }
+  }
+
+  #renderPoint(routePoint) {
     const escKeyDownHandler = (evt) => {
       if (evt.key === 'Escape' || evt.key === 'Esc') {
         evt.preventDefault();
@@ -53,26 +74,34 @@ export default class BoardPresenter {
     const pointComponent = new RoutePointView({
       routePoint,
       onEditClick: () => {
+        replaceAllFormsToPoints.call(this);
         replacePointToForm.call(this);
         document.addEventListener('keydown', escKeyDownHandler);
       }
     });
 
     const formComponent = new FormEditingView({
-      formEditing,
+      routePoint,
       onSubmit: () => {
         replaceFormToPoint.call(this);
         document.removeEventListener('keydown', escKeyDownHandler);
       },
       onDeleteClick: () => {
         deletePoint.call(this);
-        document.addEventListener('keydown', escKeyDownHandler);
+        document.removeEventListener('keydown', escKeyDownHandler);
       },
       onRollUpClick: () => {
         replaceFormToPoint.call(this);
-        document.addEventListener('keydown', escKeyDownHandler);
+        document.removeEventListener('keydown', escKeyDownHandler);
       }
     });
+
+    function replaceAllFormsToPoints() {
+      const buttons = document.querySelectorAll('.event__cancel__form');
+      for (const button of buttons) {
+        button.click();
+      }
+    }
 
     function replacePointToForm() {
       pointComponent.element.replaceWith(formComponent.element);
@@ -92,12 +121,7 @@ export default class BoardPresenter {
       pointComponent.element.remove();
       formComponent.removeElement();
       pointComponent.removeElement();
-      if (this.#boardPoints.length <= 0) {
-        while (this.#boardContainer.firstChild) {
-          this.#boardContainer.removeChild(this.#boardContainer.firstChild);
-        }
-        render(new EmptyView(),this.#boardContainer);
-      }
+      this.#renderEmptyView();
     }
 
     render(pointComponent, this.#ListComponent.element, RenderPosition.AFTERBEGIN);
@@ -145,12 +169,14 @@ export default class BoardPresenter {
         renderPoints.call(this);
         newSortingView.element[0].checked = true;
         sortByDateLowHigh.call(this);
+        this.#renderEmptyView();
       },
       onFutureChange: () => {
         this.#isFuture = true;
         renderPoints.call(this);
         newSortingView.element[0].checked = true;
         sortByDateLowHigh.call(this);
+        this.#renderEmptyView();
       }
     });
 
@@ -159,13 +185,22 @@ export default class BoardPresenter {
     //Кнопка создания новой точки
     new AddNewButtonView({
       onClick: () => {
-        if (this.#boardPoints.length === 0){
+        if (this.#isEmpty()){
+          closeAllForms.call(this);
           addNewPointRemoveEmptyBanner.call(this);
         } else {
+          closeAllForms.call(this);
           addNewPoint.call(this);
         }
       }
     });
+
+    function closeAllForms() {
+      const buttons = document.querySelectorAll('.event__cancel__form');
+      for (const button of buttons) {
+        button.click();
+      }
+    }
 
     function addNewPointRemoveEmptyBanner() {
       while (this.#boardContainer.firstChild) {
@@ -189,21 +224,21 @@ export default class BoardPresenter {
 
       const formCreating = new FormCreatingView({
         onSubmit: () => {
-          const newRoutePoint = getRoutePoint();
-          const newEditingForm = getDestination();
+          const newRoutePoint = getRoutePoint(); //Заменить на submit
           this.#boardPoints = [...this.#boardPoints,newRoutePoint];
-          this.#boardEditingForms = [...this.#boardEditingForms,newEditingForm];
           deleteForm.call(this);
-          this.#renderPoint(newRoutePoint, newEditingForm);
+          this.#renderPoint(newRoutePoint);
           if (newSortingView.element[0].checked) {
             sortByDateLowHigh.call(this);
           } else {
             sortByPriceHighLow.call(this);
           }
+          this.#renderEmptyView();
           document.removeEventListener('keydown', escKeyDownHandlerEdit);
         },
         onDeleteClick: () => {
           deleteForm.call(this);
+          this.#renderEmptyView();
           document.removeEventListener('keydown', escKeyDownHandlerEdit);
         }
       });
@@ -213,12 +248,6 @@ export default class BoardPresenter {
       function deleteForm() {
         formCreating.element.remove();
         formCreating.removeElement();
-        if (this.#boardPoints.length <= 0) {
-          while (this.#boardContainer.firstChild) {
-            this.#boardContainer.removeChild(this.#boardContainer.firstChild);
-          }
-          render(new EmptyView(),this.#boardContainer);
-        }
       }
     }
 
@@ -229,17 +258,25 @@ export default class BoardPresenter {
     renderPoints.call(this);
 
     function renderPoints() {
+      if (this.#wasEmptyView) {
+        while (this.#boardContainer.firstChild) {
+          this.#boardContainer.removeChild(this.#boardContainer.firstChild);
+        }
+        render(this.#ListComponent, this.#boardContainer);
+        addNewSortingView.call(this);
+        this.#wasEmptyView = false;
+      }
       while (this.#ListComponent.element.firstChild) {
         this.#ListComponent.element.removeChild(this.#ListComponent.element.firstChild);
       }
       if (!this.#isFuture) {
         for (let i = 0; i < this.#boardPoints.length; i++) {
-          this.#renderPoint(this.#boardPoints[i], this.#boardEditingForms[i]);
+          this.#renderPoint(this.#boardPoints[i]);
         }
       } else {
         this.#boardFuturePoints = this.#boardFuturePoints.filter((point) => point.dateFrom >= this.#currentDate);
         for (let i = 0; i < this.#boardFuturePoints.length; i++) {
-          this.#renderPoint(this.#boardFuturePoints[i], this.#boardEditingForms[i]);
+          this.#renderPoint(this.#boardFuturePoints[i]);
         }
       }
     }
