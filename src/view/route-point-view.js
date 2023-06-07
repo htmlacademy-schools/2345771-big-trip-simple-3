@@ -77,6 +77,10 @@ export default class RoutePointView extends AbstractView {
     return this.#routePoint;
   }
 
+  set routePoint(routePoint) {
+    this.#routePoint = routePoint;
+  }
+
   #editClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleEditClick();

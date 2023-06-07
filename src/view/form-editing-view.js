@@ -1,6 +1,9 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import {getDestination} from '../mock/destination-mock';
 import dayjs from 'dayjs';
+import flatpickr from 'flatpickr';
+
+import 'flatpickr/dist/flatpickr.min.css';
 
 //const getPictures = (pictures) => pictures.map((picture) => `
 //'<img class="event__photo" src="${picture.src}" alt="${picture.description}">';
@@ -155,6 +158,7 @@ export default class FormEditingView extends AbstractView {
   #handleSubmit = null;
   #handleDeleteClick = null;
   #handleRollUpClick = null;
+  #datepicker = null;
 
   constructor({routePoint, onSubmit, onDeleteClick, onRollUpClick}) {
     super();
@@ -169,10 +173,40 @@ export default class FormEditingView extends AbstractView {
       .addEventListener('click', this.#deleteClickHandler);
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this.#rollUpClickHandler);
+
+    this.#setDatepicker();
+  }
+
+  // Перегружаем метод родителя removeElement,
+  // чтобы при удалении удалялся более не нужный календарь
+  removeElement() {
+    super.removeElement();
+
+    if (this.#datepicker) {
+      this.#datepicker.destroy();
+      this.#datepicker = null;
+    }
+  }
+
+  #setDatepicker() {
+    this.#datepicker = flatpickr(
+      this.element.querySelectorAll('.event__input--time'),
+      {
+        dateFormat: 'd/m/y h:i',
+      },
+    );
   }
 
   get template() {
     return createNewFormEditingTemplate(this.#routePoint);
+  }
+
+  get routePoint() {
+    return this.#routePoint;
+  }
+
+  set routePoint(routePoint) {
+    this.#routePoint = routePoint;
   }
 
   #submitHandler = (evt) => {
