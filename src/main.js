@@ -13,4 +13,4 @@ const boardPresenter = new BoardPresenter({
 
 boardPresenter.init();
 
-//Module 6 task 2
+//Filtres
