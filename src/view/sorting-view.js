@@ -55,3 +55,5 @@ export default class SortingView extends AbstractView {
   };
 
 }
+
+//Implemented
