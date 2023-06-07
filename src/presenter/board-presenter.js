@@ -16,16 +16,16 @@ export default class BoardPresenter {
   #routePointsModel = null;
   #destinationModel = null;
 
-  #ListComponent = new ListView();
+  #listComponent = new ListView();
 
   #boardPoints = [];
   #boardDestinations = [];
-  #wasEmptyView = false;
+  #boardFuturePoints = [];
 
   #filterContainer = document.querySelector('.trip-controls__filters');
   #currentDate = new Date().toJSON();
-  #boardFuturePoints = [];
   #isFuture = false;
+  #wasEmptyView = false;
 
   constructor({boardContainer, routePointsModel, destinationModel}) {
     this.#boardContainer = boardContainer;
@@ -62,72 +62,75 @@ export default class BoardPresenter {
     }
   }
 
-  #renderPoint(routePoint) {
-    const escKeyDownHandler = (evt) => {
-      if (evt.key === 'Escape' || evt.key === 'Esc') {
-        evt.preventDefault();
-        replaceFormToPoint.call(this);
-        document.removeEventListener('keydown', escKeyDownHandler);
-      }
-    };
+  #renderBoard() {
+    //Рендер кнопки
+    const renderPoint = (routePoint) => {
+      const escKeyDownHandler = (evt) => {
+        if (evt.key === 'Escape' || evt.key === 'Esc') {
+          evt.preventDefault();
+          replaceFormToPoint.call(this);
+          document.removeEventListener('keydown', escKeyDownHandler);
+        }
+      };
 
-    const pointComponent = new RoutePointView({
-      routePoint,
-      onEditClick: () => {
-        replaceAllFormsToPoints.call(this);
-        replacePointToForm.call(this);
-        document.addEventListener('keydown', escKeyDownHandler);
-      }
-    });
+      const pointComponent = new RoutePointView({
+        routePoint,
+        onEditClick: () => {
+          replaceAllFormsToPoints.call(this);
+          replacePointToForm.call(this);
+          document.addEventListener('keydown', escKeyDownHandler);
+        }
+      });
 
-    const formComponent = new FormEditingView({
-      routePoint,
-      onSubmit: () => {
-        replaceFormToPoint.call(this);
-        document.removeEventListener('keydown', escKeyDownHandler);
-      },
-      onDeleteClick: () => {
-        deletePoint.call(this);
-        document.removeEventListener('keydown', escKeyDownHandler);
-      },
-      onRollUpClick: () => {
-        replaceFormToPoint.call(this);
-        document.removeEventListener('keydown', escKeyDownHandler);
-      }
-    });
+      const formComponent = new FormEditingView({
+        routePoint,
+        onSubmit: () => {
+          pointComponent.routePoint = formComponent.routePoint;
+          replaceFormToPoint.call(this);
+          document.removeEventListener('keydown', escKeyDownHandler);
+        },
+        onDeleteClick: () => {
+          deletePoint.call(this);
+          document.removeEventListener('keydown', escKeyDownHandler);
+        },
+        onRollUpClick: () => {
+          replaceFormToPoint.call(this);
+          document.removeEventListener('keydown', escKeyDownHandler);
+        }
+      });
 
-    function replaceAllFormsToPoints() {
-      const buttons = document.querySelectorAll('.event__cancel__form');
-      for (const button of buttons) {
-        button.click();
-      }
-    }
-
-    function replacePointToForm() {
-      pointComponent.element.replaceWith(formComponent.element);
-    }
-
-    function replaceFormToPoint() {
-      formComponent.element.replaceWith(pointComponent.element);
-    }
-
-    function deletePoint() {
-      for (const point of this.#boardPoints){
-        if (point.id === pointComponent.routePoint.id) {
-          this.#boardPoints = this.#boardPoints.filter((el) => el.id !== point.id);
+      function replaceAllFormsToPoints() {
+        const buttons = document.querySelectorAll('.event__cancel__form');
+        for (const button of buttons) {
+          button.click();
         }
       }
-      formComponent.element.remove();
-      pointComponent.element.remove();
-      formComponent.removeElement();
-      pointComponent.removeElement();
-      this.#renderEmptyView();
-    }
 
-    render(pointComponent, this.#ListComponent.element, RenderPosition.AFTERBEGIN);
-  }
+      function replacePointToForm() {
+        pointComponent.element.replaceWith(formComponent.element);
+      }
 
-  #renderBoard() {
+      function replaceFormToPoint() {
+        renderPoints.call(this);
+        formComponent.element.replaceWith(pointComponent.element);
+      }
+
+      function deletePoint() {
+        for (const point of this.#boardPoints){
+          if (point.id === pointComponent.routePoint.id) {
+            this.#boardPoints = this.#boardPoints.filter((el) => el.id !== point.id);
+          }
+        }
+        formComponent.element.remove();
+        pointComponent.element.remove();
+        formComponent.removeElement();
+        pointComponent.removeElement();
+        this.#renderEmptyView();
+      }
+
+      render(pointComponent, this.#listComponent.element, RenderPosition.AFTERBEGIN);
+    };
+
     //Кнопки сортировки
     const newSortingView = new SortingView({
       onDateChange: () => {
@@ -207,7 +210,7 @@ export default class BoardPresenter {
         this.#boardContainer.removeChild(this.#boardContainer.firstChild);
       }
       addNewSortingView.call(this);
-      render(this.#ListComponent, this.#boardContainer);
+      render(this.#listComponent, this.#boardContainer);
       addNewPoint.call(this);
     }
 
@@ -227,7 +230,7 @@ export default class BoardPresenter {
           const newRoutePoint = getRoutePoint(); //Заменить на submit
           this.#boardPoints = [...this.#boardPoints,newRoutePoint];
           deleteForm.call(this);
-          this.#renderPoint(newRoutePoint);
+          renderPoint(newRoutePoint);
           if (newSortingView.element[0].checked) {
             sortByDateLowHigh.call(this);
           } else {
@@ -243,7 +246,7 @@ export default class BoardPresenter {
         }
       });
 
-      render(formCreating, this.#ListComponent.element, RenderPosition.AFTERBEGIN);
+      render(formCreating, this.#listComponent.element, RenderPosition.AFTERBEGIN);
 
       function deleteForm() {
         formCreating.element.remove();
@@ -252,7 +255,7 @@ export default class BoardPresenter {
     }
 
     //Начальный рендер
-    render(this.#ListComponent, this.#boardContainer);
+    render(this.#listComponent, this.#boardContainer);
     addNewSortingView.call(this);
     this.#boardPoints.sort(comparePointsByDateLowHigh);
     renderPoints.call(this);
@@ -262,21 +265,21 @@ export default class BoardPresenter {
         while (this.#boardContainer.firstChild) {
           this.#boardContainer.removeChild(this.#boardContainer.firstChild);
         }
-        render(this.#ListComponent, this.#boardContainer);
+        render(this.#listComponent, this.#boardContainer);
         addNewSortingView.call(this);
         this.#wasEmptyView = false;
       }
-      while (this.#ListComponent.element.firstChild) {
-        this.#ListComponent.element.removeChild(this.#ListComponent.element.firstChild);
+      while (this.#listComponent.element.firstChild) {
+        this.#listComponent.element.removeChild(this.#listComponent.element.firstChild);
       }
       if (!this.#isFuture) {
         for (let i = 0; i < this.#boardPoints.length; i++) {
-          this.#renderPoint(this.#boardPoints[i]);
+          renderPoint(this.#boardPoints[i]);
         }
       } else {
         this.#boardFuturePoints = this.#boardFuturePoints.filter((point) => point.dateFrom >= this.#currentDate);
         for (let i = 0; i < this.#boardFuturePoints.length; i++) {
-          this.#renderPoint(this.#boardFuturePoints[i]);
+          renderPoint(this.#boardFuturePoints[i]);
         }
       }
     }
