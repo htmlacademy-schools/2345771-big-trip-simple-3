@@ -1,4 +1,5 @@
 import {getRandomInteger} from '../utils.js';
+import {nanoid} from 'nanoid';
 
 const generateDate = () => {
   const dates = [
@@ -27,12 +28,12 @@ const generateOffers = () => {
     {
       id: 1,
       title: 'Add luggage',
-      price: 30
+      price: 50
     },
     {
       id: 2,
       title: 'Switch to comfort class',
-      price: 100
+      price: 80
     },
     {
       id: 3,
@@ -106,7 +107,7 @@ export const getRoutePoint = () => {
     dateFrom: date[0],
     dateTo: date[1],
     destination: generateDestination(),
-    id: getRandomInteger(1, 100),
+    id: nanoid(),
     offers: generateOffers(),
     type: generateType()
   });

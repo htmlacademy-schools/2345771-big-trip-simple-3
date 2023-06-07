@@ -22,9 +22,9 @@ const createNewRoutePointTemplate = (routePoint) => {
   const {basePrice, dateFrom, dateTo, destination, offers, type} = routePoint;
   const eventDateTime = convertToEventDateTime(dateFrom);
   const eventDate = convertToEventDate(dateFrom);
-  const startDateTime = convertToDateTime(dateFrom);
+  const startDate = convertToDateTime(dateFrom);
   const startTime = convertToTime(dateFrom);
-  const endDateTime = convertToDateTime(dateTo);
+  const endDate = convertToDateTime(dateTo);
   const endTime = convertToTime(dateTo);
   const offersOfPoint = getOffers(offers);
 
@@ -37,9 +37,9 @@ const createNewRoutePointTemplate = (routePoint) => {
   <h3 class="event__title">${convertToUpperCase(type)} ${destination}</h3>
   <div class="event__schedule">
     <p class="event__time">
-      <time class="event__start-time" datetime="${startDateTime}">${startTime}</time>
+      <time class="event__start-time" datetime="${startDate}">${startTime}</time>
       —
-      <time class="event__end-time" datetime="${endDateTime}">${endTime}</time>
+      <time class="event__end-time" datetime="${endDate}">${endTime}</time>
     </p>
   </div>
   <p class="event__price">
