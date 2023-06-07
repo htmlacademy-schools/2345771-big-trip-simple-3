@@ -1,5 +1,4 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import {getDestination} from '../mock/destination-mock';
 
 //const getPictures = (pictures) => pictures.map((picture) => `
 //'<img class="event__photo" src="${picture.src}" alt="${picture.description}">';

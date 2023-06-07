@@ -1,5 +1,4 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import {getDestination} from '../mock/destination-mock';
 import dayjs from 'dayjs';
 import flatpickr from 'flatpickr';
 
@@ -28,14 +27,14 @@ const convertToTime = (date) => dayjs(date).format(TIME_FORMAT);
 const convertToUpperCase = (type) => type.charAt(0).toUpperCase() + type.slice(1);
 
 
-const createNewFormEditingTemplate = (routePoint) => {
+const createNewFormEditingTemplate = (routePoint, destinations) => {
   const {basePrice, dateFrom, dateTo, destination, offers, type} = routePoint;
   const startDate = convertToDateTime(dateFrom);
   const startTime = convertToTime(dateFrom);
   const endDate = convertToDateTime(dateTo);
   const endTime = convertToTime(dateTo);
   const offersOfPoint = getOffers(offers);
-  const {description} = getDestination();
+  const {description} = destinations;
 
   //const picturesOfDestination = getPictures(pictures);
 
@@ -155,14 +154,16 @@ const createNewFormEditingTemplate = (routePoint) => {
 
 export default class FormEditingView extends AbstractView {
   #routePoint = null;
+  #destinations = null;
   #handleSubmit = null;
   #handleDeleteClick = null;
   #handleRollUpClick = null;
   #datepicker = null;
 
-  constructor({routePoint, onSubmit, onDeleteClick, onRollUpClick}) {
+  constructor({routePoint, destinations, onSubmit, onDeleteClick, onRollUpClick}) {
     super();
     this.#routePoint = routePoint;
+    this.#destinations = destinations;
     this.#handleSubmit = onSubmit;
     this.#handleDeleteClick = onDeleteClick;
     this.#handleRollUpClick = onRollUpClick;
@@ -198,7 +199,7 @@ export default class FormEditingView extends AbstractView {
   }
 
   get template() {
-    return createNewFormEditingTemplate(this.#routePoint);
+    return createNewFormEditingTemplate(this.#routePoint, this.#destinations);
   }
 
   get routePoint() {
