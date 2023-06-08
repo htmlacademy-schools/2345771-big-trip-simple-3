@@ -24,5 +24,3 @@ const boardPresenter = new BoardPresenter({
 });
 
 boardPresenter.init();
-
-//m8-t2
