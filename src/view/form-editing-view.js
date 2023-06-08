@@ -1,24 +1,35 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import {getDestination} from '../mock/destination-mock';
 import dayjs from 'dayjs';
 import flatpickr from 'flatpickr';
 
 import 'flatpickr/dist/flatpickr.min.css';
 
-//const getPictures = (pictures) => pictures.map((picture) => `
-//'<img class="event__photo" src="${picture.src}" alt="${picture.description}">';
-//`).join('');
+const getPictures = (pictures) => pictures.map((picture) => `
+<img class="event__photo" src="${picture.src}" alt="${picture.description}">`).join('');
 
-const getOffers = (offers) => offers.map((offer) => `
-<div class="event__offer-selector">
-            <input class="event__offer-checkbox  visually-hidden" id="event-offer-luggage-${offer.id}" type="checkbox" name="event-offer-luggage" checked="">
-            <label class="event__offer-label" for="event-offer-luggage-${offer.id}">
-              <span class="event__offer-title">${offer.title}</span>
-              +€&nbsp;
-              <span class="event__offer-price">${offer.price}</span>
-            </label>
-          </div>
-          `).join('');
+const getOffers = (offers, offersId) => {
+  const newOffers = [];
+  for (const offer of offers){
+    if (offer.id in offersId) {
+      newOffers.push(`<div class="event__offer-selector">
+      <input class="event__offer-checkbox  visually-hidden" id="event-offer-luggage-${offer.id}" type="checkbox" name="event-offer-luggage" checked="">
+      <label class="event__offer-label" for="event-offer-luggage-${offer.id}">
+        <span class="event__offer-title">${offer.title}</span>
+        <span class="event__offer-price">${offer.price}</span>
+      </label>
+    </div>`);
+    } else {
+      newOffers.push(`<div class="event__offer-selector">
+      <input class="event__offer-checkbox  visually-hidden" id="event-offer-luggage-${offer.id}" type="checkbox" name="event-offer-luggage">
+      <label class="event__offer-label" for="event-offer-luggage-${offer.id}">
+        <span class="event__offer-title">${offer.title}</span>
+        <span class="event__offer-price">${offer.price}</span>
+      </label>
+    </div>`);
+    }
+  }
+  return newOffers.join(' ');
+};
 
 const DATE_FORMAT = 'DD/MM/YY';
 const TIME_FORMAT = 'H:mm';
@@ -28,16 +39,18 @@ const convertToTime = (date) => dayjs(date).format(TIME_FORMAT);
 const convertToUpperCase = (type) => type.charAt(0).toUpperCase() + type.slice(1);
 
 
-const createNewFormEditingTemplate = (routePoint) => {
+const createNewFormEditingTemplate = (routePoint, destinations, offersArray) => {
+
   const {basePrice, dateFrom, dateTo, destination, offers, type} = routePoint;
   const startDate = convertToDateTime(dateFrom);
   const startTime = convertToTime(dateFrom);
   const endDate = convertToDateTime(dateTo);
   const endTime = convertToTime(dateTo);
-  const offersOfPoint = getOffers(offers);
-  const {description} = getDestination();
+  const description = destinations[destination - 1].description;
+  const allOffers = offersArray.filter(((el) => el.type === type))[0].offers;
+  const offersOfPoint = getOffers(allOffers, offers);
 
-  //const picturesOfDestination = getPictures(pictures);
+  const picturesOfDestination = getPictures(destinations[destination - 1].pictures);
 
   return `<li class="trip-events__item">
   <form class="event event--edit" action="#" method="post">
@@ -105,7 +118,7 @@ const createNewFormEditingTemplate = (routePoint) => {
         <label class="event__label  event__type-output" for="event-destination-1">
           ${convertToUpperCase(type)}
         </label>
-        <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value="${destination}" list="destination-list-1">
+        <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value="${destinations[destination - 1].name}" list="destination-list-1">
         <datalist id="destination-list-1">
           <option value="Amsterdam"></option>
           <option value="Geneva"></option>
@@ -147,6 +160,11 @@ const createNewFormEditingTemplate = (routePoint) => {
       <section class="event__section  event__section--destination">
         <h3 class="event__section-title  event__section-title--destination">Destination</h3>
         <p class="event__destination-description">${description}</p>
+        <div class="event__photos-container">
+                      <div class="event__photos-tape">
+                        ${picturesOfDestination}
+                      </div>
+                    </div>
       </section>
     </section>
   </form>
@@ -155,14 +173,18 @@ const createNewFormEditingTemplate = (routePoint) => {
 
 export default class FormEditingView extends AbstractView {
   #routePoint = null;
+  #destinations = null;
+  #offersArray = null;
   #handleSubmit = null;
   #handleDeleteClick = null;
   #handleRollUpClick = null;
   #datepicker = null;
 
-  constructor({routePoint, onSubmit, onDeleteClick, onRollUpClick}) {
+  constructor({routePoint, destinations, offersArray, onSubmit, onDeleteClick, onRollUpClick}) {
     super();
     this.#routePoint = routePoint;
+    this.#destinations = destinations;
+    this.#offersArray = offersArray;
     this.#handleSubmit = onSubmit;
     this.#handleDeleteClick = onDeleteClick;
     this.#handleRollUpClick = onRollUpClick;
@@ -177,13 +199,10 @@ export default class FormEditingView extends AbstractView {
     this.#setDatepicker();
   }
 
-  // Перегружаем метод родителя removeElement,
-  // чтобы при удалении удалялся более не нужный календарь
   removeElement() {
     super.removeElement();
 
     if (this.#datepicker) {
-      this.#datepicker.destroy();
       this.#datepicker = null;
     }
   }
@@ -198,7 +217,7 @@ export default class FormEditingView extends AbstractView {
   }
 
   get template() {
-    return createNewFormEditingTemplate(this.#routePoint);
+    return createNewFormEditingTemplate(this.#routePoint, this.#destinations, this.#offersArray);
   }
 
   get routePoint() {

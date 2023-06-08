@@ -15,27 +15,30 @@ export default class BoardPresenter {
   #boardContainer = null;
   #routePointsModel = null;
   #destinationModel = null;
+  #offersModel = null;
 
   #listComponent = new ListView();
 
   #boardPoints = [];
   #boardDestinations = [];
+  #boardOffers = [];
   #boardFuturePoints = [];
 
   #filterContainer = document.querySelector('.trip-controls__filters');
-  #currentDate = new Date().toJSON();
   #isFuture = false;
   #wasEmptyView = false;
 
-  constructor({boardContainer, routePointsModel, destinationModel}) {
+  constructor({boardContainer, routePointsModel, destinationModel, offersModel}) {
     this.#boardContainer = boardContainer;
     this.#routePointsModel = routePointsModel;
     this.#destinationModel = destinationModel;
+    this.#offersModel = offersModel;
   }
 
   init() {
     this.#boardPoints = [...this.#routePointsModel.routePoints];
     this.#boardDestinations = [...this.#destinationModel.destinations];
+    this.#boardOffers = [...this.#offersModel.offers];
 
     this.#renderBoard();
   }
@@ -75,6 +78,8 @@ export default class BoardPresenter {
 
       const pointComponent = new RoutePointView({
         routePoint,
+        destinations: this.#boardDestinations,
+        offersArray: this.#boardOffers,
         onEditClick: () => {
           replaceAllFormsToPoints.call(this);
           replacePointToForm.call(this);
@@ -84,6 +89,8 @@ export default class BoardPresenter {
 
       const formComponent = new FormEditingView({
         routePoint,
+        destinations: this.#boardDestinations,
+        offersArray: this.#boardOffers,
         onSubmit: () => {
           pointComponent.routePoint = formComponent.routePoint;
           replaceFormToPoint.call(this);
@@ -226,8 +233,10 @@ export default class BoardPresenter {
       document.addEventListener('keydown', escKeyDownHandlerEdit);
 
       const formCreating = new FormCreatingView({
+        destinations: this.#boardDestinations,
+        offersArray: this.#boardOffers,
         onSubmit: () => {
-          const newRoutePoint = getRoutePoint(); //Заменить на submit
+          const newRoutePoint = getRoutePoint();
           this.#boardPoints = [...this.#boardPoints,newRoutePoint];
           deleteForm.call(this);
           renderPoint(newRoutePoint);
@@ -277,7 +286,8 @@ export default class BoardPresenter {
           renderPoint(this.#boardPoints[i]);
         }
       } else {
-        this.#boardFuturePoints = this.#boardFuturePoints.filter((point) => point.dateFrom >= this.#currentDate);
+        const currentDate = new Date().toJSON();
+        this.#boardFuturePoints = this.#boardPoints.filter((point) => point.dateFrom >= currentDate);
         for (let i = 0; i < this.#boardFuturePoints.length; i++) {
           renderPoint(this.#boardFuturePoints[i]);
         }
