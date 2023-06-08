@@ -7,6 +7,7 @@ export default class DestinationsModel extends Observable {
   constructor ({pointsApiService}) {
     super();
     this.#pointsApiService = pointsApiService;
+    this.init();
   }
 
   async init() {

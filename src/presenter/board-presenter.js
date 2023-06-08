@@ -25,7 +25,6 @@ export default class BoardPresenter {
   #boardFuturePoints = [];
 
   #filterContainer = document.querySelector('.trip-controls__filters');
-  #currentDate = new Date().toJSON();
   #isFuture = false;
   #wasEmptyView = false;
 
@@ -91,6 +90,7 @@ export default class BoardPresenter {
       const formComponent = new FormEditingView({
         routePoint,
         destinations: this.#boardDestinations,
+        offersArray: this.#boardOffers,
         onSubmit: () => {
           pointComponent.routePoint = formComponent.routePoint;
           replaceFormToPoint.call(this);
@@ -233,6 +233,8 @@ export default class BoardPresenter {
       document.addEventListener('keydown', escKeyDownHandlerEdit);
 
       const formCreating = new FormCreatingView({
+        destinations: this.#boardDestinations,
+        offersArray: this.#boardOffers,
         onSubmit: () => {
           const newRoutePoint = getRoutePoint();
           this.#boardPoints = [...this.#boardPoints,newRoutePoint];
@@ -284,7 +286,8 @@ export default class BoardPresenter {
           renderPoint(this.#boardPoints[i]);
         }
       } else {
-        this.#boardFuturePoints = this.#boardFuturePoints.filter((point) => point.dateFrom >= this.#currentDate);
+        const currentDate = new Date().toJSON();
+        this.#boardFuturePoints = this.#boardPoints.filter((point) => point.dateFrom >= currentDate);
         for (let i = 0; i < this.#boardFuturePoints.length; i++) {
           renderPoint(this.#boardFuturePoints[i]);
         }
